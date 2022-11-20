@@ -1,0 +1,209 @@
+from cmu_112_graphics import*
+import cs112_f22_week6_linter
+import random
+
+#Source: 
+# https://weblog.jamisbuck.org/2011/1/27/maze-generation-growing-tree-algorithm
+# https://medium.com/swlh/fun-with-python-1-maze-generator-931639b4fb7e
+class Enemy():
+    def __init__(self, health, damage, speed, dropItem):
+        self.health = health
+        self.damage = damage
+        self.speed = speed
+        self.item = dropItem
+
+class Player():
+    def __init__(self, health, baseDamage, speed, status):
+        self.health = health
+        self.baseDamage = baseDamage
+        self.speed = speed
+        self.inventory = {}
+        self.status = status
+
+class Weapons():
+    def __init__(self, damage, durability, cooldown, decreasedDamage):
+        self.damage = damage
+        self.durability = durability
+        self.cooldown = cooldown
+        self.decreasedDamage = decreasedDamage
+
+
+class Maze():
+    def __init__(self, height, width):
+        self.height = height
+        self.width = width
+        self.maze = []
+        self.walls = []
+        self.start = None
+        self.end = None
+        #initialize maze
+        for row in range(0, height):
+            line = []
+            for col in range(0, width):
+                line.append('u')
+            self.maze.append(line)
+
+    def createMaze(self):
+        startHeight = random.randint(1, self.height-2)
+        startWidth = random.randint(1, self.width-2)
+
+        self.maze[startHeight][startWidth] = 'c'
+        self.maze[startHeight-1][startWidth] = 'w'
+        self.maze[startHeight][startWidth-1] = 'w'
+        self.maze[startHeight][startWidth+1] = 'w'
+        self.maze[startHeight+1][startWidth] = 'w'
+
+        self.walls.append([startHeight-1, startWidth] )
+        self.walls.append([startHeight, startWidth-1])
+        self.walls.append([startHeight, startWidth+1])
+        self.walls.append([startHeight+1, startWidth])
+
+        #while there are still walls
+        while self.walls != []:
+            #select random wall
+            randomWall = self.walls[random.randint(0,len(self.walls)-1)]
+            #check if wall is a border wall
+            if randomWall[0] != 0:
+                #check if wall has neighbors
+                if (self.maze[randomWall[0]-1][randomWall[1]] == 'u' and 
+                self.maze[randomWall[0]+1][randomWall[1]] == 'c'):
+                    if self.surroundingCells(randomWall) < 2:
+                        self.maze[randomWall[0]][randomWall[1]] = 'c'
+                        #make neightbors walls
+                        if (randomWall[1] != 0):
+                            if self.maze[randomWall[0]][randomWall[1]-1] != 'c':
+                                self.maze[randomWall[0]][randomWall[1]-1] = 'w'
+                            if [randomWall[0], randomWall[1]-1] not in self.walls:
+                                self.walls.append([randomWall[0], randomWall[1]-1])
+
+                        if(randomWall[1] != self.width -1):
+                            if self.maze[randomWall[0]][randomWall[1]+1] != 'c':
+                                self.maze[randomWall[0]][randomWall[1]+1] = 'w'
+                            if [randomWall[0], randomWall[1]+1] not in self.walls:
+                                self.walls.append([randomWall[0], randomWall[1]+1])
+                        
+                        if self.maze[randomWall[0]-1][randomWall[1]] != 'c':
+                            self.maze[randomWall[0]-1][randomWall[1]] = 'w'
+                        if [randomWall[0]-1, randomWall[1]] not in self.walls:
+                            self.walls.append([randomWall[0]-1, randomWall[1]])
+
+                  
+            if randomWall[1] != 0:
+                if (self.maze[randomWall[0]][randomWall[1]-1] == 'u' and 
+                self.maze[randomWall[0]][randomWall[1]+1] == 'c'):
+                    if self.surroundingCells(randomWall) < 2:
+                        self.maze[randomWall[0]][randomWall[1]] = 'c'
+                        if (randomWall[0] != 0):
+                            if self.maze[randomWall[0]-1][randomWall[1]] != 'c':
+                                self.maze[randomWall[0]-1][randomWall[1]] = 'w'
+                            if [randomWall[0]-1, randomWall[1]] not in self.walls:
+                                self.walls.append([randomWall[0]-1,randomWall[1]])
+
+                        if (randomWall[0] != self.height-1):
+                            if self.maze[randomWall[0]+1][randomWall[1]] != 'c':
+                                self.maze[randomWall[0]+1][randomWall[1]] = 'w'
+                            if [randomWall[0]+1, randomWall[1]] not in self.walls:
+                                self.walls.append([randomWall[0]+1,randomWall[1]])
+
+                        if self.maze[randomWall[0]][randomWall[1]-1] != 'c':
+                            self.maze[randomWall[0]][randomWall[1]-1] = 'w'
+                        if [randomWall[0], randomWall[1]-1] not in self.walls:
+                            self.walls.append([randomWall[0],randomWall[1]-1])
+            
+            if randomWall[0] != self.height-1:
+                if (self.maze[randomWall[0]+1][randomWall[1]] == 'u' and 
+                self.maze[randomWall[0]-1][randomWall[1]] == 'c'):
+                    if self.surroundingCells(randomWall) < 2:
+                        self.maze[randomWall[0]][randomWall[1]] = 'c'
+                        if (randomWall[1] != self.width-1):
+                            if self.maze[randomWall[0]][randomWall[1]+1] != 'c':
+                                self.maze[randomWall[0]][randomWall[1]+1] = 'w'
+                            if [randomWall[0], randomWall[1]+1] not in self.walls:
+                                self.walls.append([randomWall[0], randomWall[1]+1])
+
+                        if (randomWall[1] != 0):
+                            if self.maze[randomWall[0]][randomWall[1]-1] != 'c':
+                                self.maze[randomWall[0]][randomWall[1]-1] = 'w'
+                            if [randomWall[0], randomWall[1]-1] not in self.walls:
+                                self.walls.append([randomWall[0], randomWall[1]-1])
+                        
+                        if self.maze[randomWall[0]+1][randomWall[1]] != 'c':
+                            self.maze[randomWall[0]+1][randomWall[1]] = 'w'
+                        if [randomWall[0]+1, randomWall[1]] not in self.walls:
+                            self.walls.append([randomWall[0]+1, randomWall[1]])
+
+                        
+            if randomWall[1] != self.width - 1:
+                if (self.maze[randomWall[0]][randomWall[1]+1] == 'u' and 
+                self.maze[randomWall[0]][randomWall[1]-1] == 'c'):
+                    if self.surroundingCells(randomWall) < 2:
+                        self.maze[randomWall[0]][randomWall[1]] = 'c'
+
+                        if (randomWall[0] != self.height-1):
+                            if self.maze[randomWall[0]+1][randomWall[1]] != 'c':
+                                self.maze[randomWall[0]+1][randomWall[1]] = 'w'
+                            if [randomWall[0]+1, randomWall[1]] not in self.walls:
+                                self.walls.append([randomWall[0]+1,randomWall[1]])
+                        
+                        if (randomWall[0] != 0):
+                            if self.maze[randomWall[0]-1][randomWall[1]] != 'c':
+                                self.maze[randomWall[0]-1][randomWall[1]] = 'w'
+                            if [randomWall[0]-1, randomWall[1]] not in self.walls:
+                                self.walls.append([randomWall[0]-1,randomWall[1]])
+                        
+                        if self.maze[randomWall[0]][randomWall[1]+1] != 'c':
+                            self.maze[randomWall[0]][randomWall[1]+1] = 'w'
+                        if [randomWall[0], randomWall[1]+1] not in self.walls:
+                            self.walls.append([randomWall[0],randomWall[1]+1])
+ 
+            #delete wall that was made into cell
+            self.deleteWall(randomWall) 
+
+        #make border walls
+        for row in range(0, self.height):
+            for col in range(0, self.width):
+                if (self.maze[row][col] == 'u'):
+                    self.maze[row][col] = 'w'
+
+        #create start and end
+        for col in range(0, self.width):
+            if (self.maze[1][col] == 'c'):
+                self.maze[0][col] = 'c'
+                self.start = [[0],[col]]
+                break
+        for col in range(self.width-1, 0, -1):
+            if (self.maze[self.height-2][col] == 'c'):
+                self.maze[self.height-1][col] = 'c'
+                self.end = [[0],[col]]
+                break
+
+    def print(self):
+        print (self.maze)
+
+    def surroundingCells(self, randomWall):
+        numberOfCells = 0
+        if (self.maze[randomWall[0]-1][randomWall[1]] == 'c' or
+            self.maze[randomWall[0]+1][randomWall[1]] == 'c' or
+            self.maze[randomWall[0]][randomWall[1]-1] == 'c' or
+            self.maze[randomWall[0]][randomWall[1]+1] == 'c'):
+            numberOfCells += 1
+
+        return numberOfCells
+
+    def deleteWall(self, randomWall):
+        for wall in self.walls:
+            if (wall[0], wall[1]) == (randomWall[0], randomWall[1]):
+                self.walls.remove(wall)
+
+    
+
+a = Maze(5,5)
+a.createMaze()
+a.print()
+
+
+
+      
+
+        
+    
