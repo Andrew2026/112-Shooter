@@ -1,100 +1,466 @@
 from cmu_112_graphics import*
-import math
-import cs112_f22_week6_linter
-import decimal
+import math, random
 
-#Source: https://pythonprogramming.altervista.org/raycasting-with-pygame/
+#Source:
+#https://weblog.jamisbuck.org/2011/1/27/maze-generation-growing-tree-algorithm
+#https://medium.com/swlh/fun-with-python-1-maze-generator-931639b4fb7e 
+#https://pythonprogramming.altervista.org/raycasting-with-pygame/
+#https://youtu.be/eBFOjriHMc8 
 #https://www.youtube.com/watch?v=gYRrGTC7GtA&t=498s
 
-#cmu112 Hw
-def roundHalfUp(d):
-    # Round to nearest with ties going away from zero.
-    rounding = decimal.ROUND_HALF_UP
-    # See other rounding options here:
-    # https://docs.python.org/3/library/decimal.html#rounding-modes
-    return int(decimal.Decimal(d).to_integral_value(rounding=rounding))
+class Maze():
+    def __init__(self, height, width):
+        self.height = height
+        self.width = width
+        self.maze = []
+        self.walls = []
+        self.start = None
+        self.end = None
+        self.startHeight = 0
+        self.startWidth = 0
+        self.keyHeight = 0
+        self.keyWidth = 0
+        #initialize maze
+        for row in range(0, height):
+            line = []
+            for col in range(0, width):
+                line.append('u')
+            self.maze.append(line)
+
+    def createMaze(self):
+        self.startHeight = random.randint(0, 1)
+        if self.startHeight == 0:
+            self.startHeight = 1
+        else:
+            self.startHeight = self.height - 2
+        
+        self.startWidth = random.randint(0, 1)
+        if self.startWidth == 0:
+            self.startWidth = 1
+        else:
+            self.startWidth = self.width - 2
+
+        if self.startHeight == 1 and self.startWidth == 1:
+            self.startWidth = self.width - 2
+
+        self.maze[self.startHeight][self.startWidth] = 0
+        self.maze[self.startHeight-1][self.startWidth] = 1
+        self.maze[self.startHeight][self.startWidth-1] = 1
+        self.maze[self.startHeight][self.startWidth+1] = 1
+        self.maze[self.startHeight+1][self.startWidth] = 1
+
+        self.walls.append([self.startHeight-1, self.startWidth] )
+        self.walls.append([self.startHeight, self.startWidth-1])
+        self.walls.append([self.startHeight, self.startWidth+1])
+        self.walls.append([self.startHeight+1, self.startWidth])
+
+        #while there are still walls
+        while self.walls != []:
+            #select random wall
+            randomWall = self.walls[random.randint(0,len(self.walls)-1)]
+            #check if wall is a border wall
+            if randomWall[0] != 0:
+                #check if wall has neighbors
+                if (self.maze[randomWall[0]-1][randomWall[1]] == 'u' and 
+                self.maze[randomWall[0]+1][randomWall[1]] == 0):
+                    if self.surroundingCells(randomWall) < 2:
+                        self.maze[randomWall[0]][randomWall[1]] = 0
+                        #make neightbors walls
+                        if (randomWall[1] != 0):
+                            if self.maze[randomWall[0]][randomWall[1]-1] != 0:
+                                self.maze[randomWall[0]][randomWall[1]-1] = 1
+                            if [randomWall[0], randomWall[1]-1] not in self.walls:
+                                self.walls.append([randomWall[0], randomWall[1]-1])
+
+                        if(randomWall[1] != self.width -1):
+                            if self.maze[randomWall[0]][randomWall[1]+1] != 0:
+                                self.maze[randomWall[0]][randomWall[1]+1] = 1
+                            if [randomWall[0], randomWall[1]+1] not in self.walls:
+                                self.walls.append([randomWall[0], randomWall[1]+1])
+                        
+                        if self.maze[randomWall[0]-1][randomWall[1]] != 0:
+                            self.maze[randomWall[0]-1][randomWall[1]] = 1
+                        if [randomWall[0]-1, randomWall[1]] not in self.walls:
+                            self.walls.append([randomWall[0]-1, randomWall[1]])
+
+                  
+            if randomWall[1] != 0:
+                if (self.maze[randomWall[0]][randomWall[1]-1] == 'u' and 
+                self.maze[randomWall[0]][randomWall[1]+1] == 0):
+                    if self.surroundingCells(randomWall) < 2:
+                        self.maze[randomWall[0]][randomWall[1]] = 0
+                        if (randomWall[0] != 0):
+                            if self.maze[randomWall[0]-1][randomWall[1]] != 0:
+                                self.maze[randomWall[0]-1][randomWall[1]] = 1
+                            if [randomWall[0]-1, randomWall[1]] not in self.walls:
+                                self.walls.append([randomWall[0]-1,randomWall[1]])
+
+                        if (randomWall[0] != self.height-1):
+                            if self.maze[randomWall[0]+1][randomWall[1]] != 0:
+                                self.maze[randomWall[0]+1][randomWall[1]] = 1
+                            if [randomWall[0]+1, randomWall[1]] not in self.walls:
+                                self.walls.append([randomWall[0]+1,randomWall[1]])
+
+                            if self.maze[randomWall[0]][randomWall[1]-1] != 0:
+                                self.maze[randomWall[0]][randomWall[1]-1] = 1
+                            if [randomWall[0], randomWall[1]-1] not in self.walls:
+                                self.walls.append([randomWall[0],randomWall[1]-1])
+            
+            if randomWall[0] != self.height-1:
+                if (self.maze[randomWall[0]+1][randomWall[1]] == 'u' and 
+                self.maze[randomWall[0]-1][randomWall[1]] == 0):
+                    if self.surroundingCells(randomWall) < 2:
+                        self.maze[randomWall[0]][randomWall[1]] = 0
+                        if (randomWall[1] != self.width-1):
+                            if self.maze[randomWall[0]][randomWall[1]+1] != 0:
+                                self.maze[randomWall[0]][randomWall[1]+1] = 1
+                            if [randomWall[0], randomWall[1]+1] not in self.walls:
+                                self.walls.append([randomWall[0], randomWall[1]+1])
+
+                        if (randomWall[1] != 0):
+                            if self.maze[randomWall[0]][randomWall[1]-1] != 0:
+                                self.maze[randomWall[0]][randomWall[1]-1] = 1
+                            if [randomWall[0], randomWall[1]-1] not in self.walls:
+                                self.walls.append([randomWall[0], randomWall[1]-1])
+                        
+                        if self.maze[randomWall[0]+1][randomWall[1]] != 0:
+                            self.maze[randomWall[0]+1][randomWall[1]] = 1
+                        if [randomWall[0]+1, randomWall[1]] not in self.walls:
+                            self.walls.append([randomWall[0]+1, randomWall[1]])
+
+                        
+            if randomWall[1] != self.width - 1:
+                if (self.maze[randomWall[0]][randomWall[1]+1] == 'u' and 
+                self.maze[randomWall[0]][randomWall[1]-1] == 0):
+                    if self.surroundingCells(randomWall) < 2:
+                        self.maze[randomWall[0]][randomWall[1]] = 0
+
+                        if (randomWall[0] != self.height-1):
+                            if self.maze[randomWall[0]+1][randomWall[1]] != 0:
+                                self.maze[randomWall[0]+1][randomWall[1]] = 1
+                            if [randomWall[0]+1, randomWall[1]] not in self.walls:
+                                self.walls.append([randomWall[0]+1,randomWall[1]])
+                        
+                        if (randomWall[0] != 0):
+                            if self.maze[randomWall[0]-1][randomWall[1]] != 0:
+                                self.maze[randomWall[0]-1][randomWall[1]] = 1
+                            if [randomWall[0]-1, randomWall[1]] not in self.walls:
+                                self.walls.append([randomWall[0]-1,randomWall[1]])
+                        
+                        if self.maze[randomWall[0]][randomWall[1]+1] != 0:
+                            self.maze[randomWall[0]][randomWall[1]+1] = 1
+                        if [randomWall[0], randomWall[1]+1] not in self.walls:
+                            self.walls.append([randomWall[0],randomWall[1]+1])
+ 
+            #delete wall that was made into cell
+            self.deleteWall(randomWall) 
+
+        #make border walls
+        for row in range(0, self.height):
+            for col in range(0, self.width):
+                if (self.maze[row][col] == 'u'):
+                    self.maze[row][col] = 1
+
+        #create start and end
+        for col in range(0, self.width):
+            if (self.maze[1][col] == 0):
+                self.maze[0][col] = 0
+                self.start = [[0],[col]]
+                break
+        
+        #create door
+        for row in range(0, self.height):
+            for col in range(0, self.width):
+                if row == self.startHeight and col == self.startWidth:
+                    if self.startHeight == 1 and self.startWidth == self.width - 2:
+                            self.maze[2][self.width - 2] = 2
+                            self.maze[1][self.width - 3] = 2
+
+                    if self.startHeight == self.height - 2 and self.startWidth == 1:
+                            self.maze[self.height - 3][1] = 2
+                            self.maze[self.height - 2][2] = 2
+
+                    if self.startHeight == self.height - 2 and self.startWidth == self.width - 2:
+                            self.maze[self.height - 3][self.width - 2] = 2
+                            self.maze[self.height - 2][self.width - 3] = 2
+
+        #create key
+        self.keyHeight = random.randint(self.height/2, self.height - 2)
+        for i in range(self.width - 2):
+            if self.maze[self.keyHeight][i] == 0:
+                self.maze[self.keyHeight][i] = 3
+                self.keyWidth = i
+                break
+
+    def print(self):
+        print (self.maze)
+
+    def surroundingCells(self, randomWall):
+        numberOfCells = 0
+        if (self.maze[randomWall[0]-1][randomWall[1]] == 0 or
+            self.maze[randomWall[0]+1][randomWall[1]] == 0 or
+            self.maze[randomWall[0]][randomWall[1]-1] == 0 or
+            self.maze[randomWall[0]][randomWall[1]+1] == 0):
+            numberOfCells += 1
+
+        return numberOfCells
+
+    def deleteWall(self, randomWall):
+        for wall in self.walls:
+            if (wall[0], wall[1]) == (randomWall[0], randomWall[1]):
+                self.walls.remove(wall)
 
 def appStarted(app):
-
-    maze = [[1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-            [1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 1],
-            [1, 0, 1, 1, 0, 1, 1, 1, 0, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1], 
-            [1, 0, 1, 0, 0, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 0, 1], 
-            [1, 0, 1, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 1], 
-            [1, 0, 0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 1], 
-            [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1], 
-            [1, 1, 1, 0, 0, 2, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1], 
-            [1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1], 
-            [1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], 
-            [1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1], 
-            [1, 0, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1], 
-            [1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1, 0, 1], 
-            [1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1], 
-            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1], 
-            [1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], 
-            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 0, 0, 1], 
-            [1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 0, 1, 0, 0, 1], 
-            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 1, 1, 0, 1], 
-            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]]
-    app.maze = maze
+    a = Maze(20,20)
+    a.createMaze()
+    app.maze = a.maze
+    app.startHeight = a.startHeight
+    app.startWidth = a.startWidth
+    app.keyHeight = a.keyHeight
+    app.keyWidth = a.keyWidth
     app.dimensions = len(app.maze)
-    app.cellSize = 40
+    app.cellSize = app.height/app.dimensions
     app.mazeXO = app.width/2 // app.dimensions
     app.mazeYO = app.height // app.dimensions
-    app.px = 150
-    app.py = 150
+    for row in range(len(app.maze)):
+        for col in range(len(app.maze[0])):
+            if app.maze[row][col] == 0:
+                app.px = col * app.mazeXO + app.cellSize/2
+                app.py = row * app.mazeYO + app.cellSize/2
+                break
+        break
     app.pdx = 0
     app.pdy = 0
-    app.pa = 1.05
+    app.pa = 1.0005
     app.playerR = 5
+    app.gameOver = False
+    app.preMouseX = 0
+    app.doorUnlocked = False
 
 def keyPressed(app, event):
-    #move
-    if (event.key == 'Left'):
-        app.px += 5
-        if not isLegal(app):
-            app.px += 5
-    if (event.key == 'Right'):
-        app.px -= 5
-        if not isLegal(app):
-            app.px -= 5
-    if (event.key == 'Up'):
-        app.py += 5
-        if not isLegal(app):
-            app.py += 5
-    if (event.key == 'Down'):
-        app.py -= 5
-        if not isLegal(app):
-            app.py -= 5
 
-    #look around and move at angle
+    #move
     if (event.key == 'a'):
-        app.pa -= 0.1
+        if 0 < app.pa < math.pi/2:
+            app.px += app.pdy / (app.dimensions / 5)
+            app.py -= app.pdx  / (app.dimensions / 5)
+            if not isLegal(app):
+                app.px -= app.pdy / (app.dimensions / 5)
+                app.py += app.pdx / (app.dimensions / 5)
+        if math.pi/2 < app.pa < math.pi:
+            app.px += app.pdy / (app.dimensions / 5)
+            app.py -= app.pdx / (app.dimensions / 5)
+            if not isLegal(app):
+                app.px -= app.pdy / (app.dimensions / 5)
+                app.py += app.pdx / (app.dimensions / 5)
+        if math.pi < app.pa < 3 * math.pi / 2:
+            app.px += app.pdy / (app.dimensions / 5)
+            app.py -= app.pdx / (app.dimensions / 5)
+            if not isLegal(app):
+                app.px -= app.pdy / (app.dimensions / 5)
+                app.py += app.pdx / (app.dimensions / 5)
+        if 3 * math.pi/2 < app.pa < 2 * math.pi:
+            app.px += app.pdy / (app.dimensions / 5)
+            app.py -= app.pdx / (app.dimensions / 5)
+            if not isLegal(app):
+                app.px -= app.pdy / (app.dimensions / 5)
+                app.py += app.pdx / (app.dimensions / 5)
+        if app.pa == math.pi/2:
+            app.px -= app.py / (app.dimensions / 5)
+            app.py -= app.px / (app.dimensions / 5)
+            if not isLegal(app):
+                app.px += app.pdy / (app.dimensions / 5)
+                app.py += app.pdx / (app.dimensions / 5)
+        if app.pa == 3 * math.pi/2:
+            app.px += app.py / (app.dimensions / 5)
+            app.py += app.px / (app.dimensions / 5)
+            if not isLegal(app):
+                app.px -= app.pdy / (app.dimensions / 5)
+                app.py -= app.pdx / (app.dimensions / 5)
+
+        playerRow = int(app.py // app.mazeYO)
+        playerCol = int(app.px // app.mazeXO)
+        if (playerRow, playerCol) == (app.startHeight, app.startWidth):
+            app.gameOver = True
+        
+        
+        if playerRow == (app.keyWidth - 1):
+            if playerCol == app.keyHeight - 1:
+                app.maze[app.keyHeight][app.keyWidth] = 1
+                app.doorUnlocked = True
+            if playerCol == app.keyHeight + 1:
+                app.maze[app.keyHeight][app.keyWidth] = 1
+                app.doorUnlocked = True
+
+        if playerRow == app.keyWidth + 1:
+            if playerCol == app.keyHeight - 1:
+                app.maze[app.keyHeight][app.keyWidth] = 1
+                app.doorUnlocked = True
+            if playerCol == app.keyHeight + 1:
+                app.maze[app.keyHeight][app.keyWidth] = 1
+                app.doorUnlocked = True
+
+    if (event.key == 'd'):
+        if 0 < app.pa < math.pi/2:
+            app.px -= app.pdy / (app.dimensions / 5)
+            app.py += app.pdx  / (app.dimensions / 5)
+            if not isLegal(app):
+                app.px += app.pdy / (app.dimensions / 5)
+                app.py -= app.pdx / (app.dimensions / 5)
+        if math.pi/2 < app.pa < math.pi:
+            app.px -= app.pdy / (app.dimensions / 5)
+            app.py += app.pdx / (app.dimensions / 5)
+            if not isLegal(app):
+                app.px += app.pdy / (app.dimensions / 5)
+                app.py -= app.pdx / (app.dimensions / 5)
+        if math.pi < app.pa < 3 * math.pi / 2:
+            app.px -= app.pdy / (app.dimensions / 5)
+            app.py += app.pdx / (app.dimensions / 5)
+            if not isLegal(app):
+                app.px += app.pdy / (app.dimensions / 5)
+                app.py -= app.pdx / (app.dimensions / 5)
+        if 3 * math.pi/2 < app.pa < 2 * math.pi:
+            app.px -= app.pdy / (app.dimensions / 5)
+            app.py += app.pdx / (app.dimensions / 5)
+            if not isLegal(app):
+                app.px += app.pdy / (app.dimensions / 5)
+                app.py -= app.pdx / (app.dimensions / 5)
+        if app.pa == math.pi/2:
+            app.px += app.py / (app.dimensions / 5)
+            app.py += app.px / (app.dimensions / 5)
+            if not isLegal(app):
+                app.px -= app.pdy / (app.dimensions / 5)
+                app.py -= app.pdx / (app.dimensions / 5)
+        if app.pa == 3 * math.pi/2:
+            app.px -= app.py / (app.dimensions / 5)
+            app.py -= app.px / (app.dimensions / 5)
+            if not isLegal(app):
+                app.px += app.pdy / (app.dimensions / 5)
+                app.py += app.pdx / (app.dimensions / 5)
+        
+        playerRow = int(app.py // app.mazeYO)
+        playerCol = int(app.px // app.mazeXO)
+        if (playerRow, playerCol) == (len(app.maze) - 2, len(app.maze[0]) - 2):
+            app.gameOver = True
+
+        
+        if playerRow == (app.keyWidth - 1):
+            if playerCol == app.keyHeight - 1:
+                app.maze[app.keyHeight][app.keyWidth] = 1
+                app.doorUnlocked = True
+            if playerCol == app.keyHeight + 1:
+                app.maze[app.keyHeight][app.keyWidth] = 1
+                app.doorUnlocked = True
+
+        if playerRow == app.keyWidth + 1:
+            if playerCol == app.keyHeight - 1:
+                app.maze[app.keyHeight][app.keyWidth] = 1
+                app.doorUnlocked = True
+            if playerCol == app.keyHeight + 1:
+                app.maze[app.keyHeight][app.keyWidth] = 1
+                app.doorUnlocked = True
+            
+
+    if (event.key == 'w'):
+        app.px += app.pdx #/ (app.dimensions / 5)
+        app.py += app.pdy #/ (app.dimensions / 5)
+        if not isLegal(app):
+            app.px -= app.pdx #/ (app.dimensions / 5)
+            app.py -= app.pdy #/ (app.dimensions / 5)
+        playerRow = int(app.py // app.mazeYO)
+        playerCol = int(app.px // app.mazeXO)
+        if (playerRow, playerCol) == (len(app.maze) - 2, len(app.maze[0]) - 2):
+            app.gameOver = True
+
+        if playerRow == (app.keyWidth - 1):
+            if playerCol == app.keyHeight - 1:
+                app.maze[app.keyHeight][app.keyWidth] = 1
+                app.doorUnlocked = True
+            if playerCol == app.keyHeight + 1:
+                app.maze[app.keyHeight][app.keyWidth] = 1
+                app.doorUnlocked = True
+
+        if playerRow == app.keyWidth + 1:
+            if playerCol == app.keyHeight - 1:
+                app.maze[app.keyHeight][app.keyWidth] = 1
+                app.doorUnlocked = True
+            if playerCol == app.keyHeight + 1:
+                app.maze[app.keyHeight][app.keyWidth] = 1
+                app.doorUnlocked = True
+
+            
+
+    if (event.key == 's'):
+        app.px -= app.pdx / (app.dimensions / 5)
+        app.py -= app.pdy / (app.dimensions / 5)
+        if not isLegal(app):
+            app.px += app.pdx / (app.dimensions / 5)
+            app.py += app.pdy / (app.dimensions / 5)
+        playerRow = int(app.py // app.mazeYO)
+        playerCol = int(app.px // app.mazeXO)
+        if (playerRow, playerCol) == (app.startHeight, app.startWidth):
+            app.gameOver = True
+
+        
+        if playerRow == (app.keyWidth - 1):
+            if playerCol == app.keyHeight - 1:
+                app.maze[app.keyHeight][app.keyWidth] = 1
+                app.doorUnlocked = True
+            if playerCol == app.keyHeight + 1:
+                app.maze[app.keyHeight][app.keyWidth] = 1
+                app.doorUnlocked = True
+
+        if playerRow == app.keyWidth + 1:
+            if playerCol == app.keyHeight - 1:
+                app.maze[app.keyHeight][app.keyWidth] = 1
+                app.doorUnlocked = True
+            if playerCol == app.keyHeight + 1:
+                app.maze[app.keyHeight][app.keyWidth] = 1
+                app.doorUnlocked = True
+
+    if (event.key == 'e'):
+        if app.startHeight == 1:
+                app.maze[app.startHeight+1][app.startWidth] = 0
+                app.maze[app.startHeight][app.startWidth-1] = 0
+        
+        if app.startWidth == 1:
+                app.maze[app.startHeight][app.startWidth+1] = 0
+                app.maze[app.startHeight-1][app.startWidth] = 0
+
+        if app.startWidth == len(app.maze) - 2 and app.startHeight == len(app.
+        maze[0]) - 2:
+                app.maze[app.startHeight-1][app.startWidth] = 0
+                app.maze[app.startHeight][app.startWidth-1] = 0
+
+    if (event.key == 'r'):
+        if app.gameOver == True:
+            appStarted(app)
+
+#look
+def mouseMoved(app, event):
+    if event.x < app.preMouseX:
+        app.pa -= (0.01 + 0.05 * (app.preMouseX - event.x))
         if app.pa < 0:
             app.pa += 2 * math.pi
         app.pdx = math.cos(app.pa) * 5
         app.pdy = math.sin(app.pa) * 5
+        playerRow = int(app.py // app.mazeYO)
+        playerCol = int(app.px // app.mazeXO)
+        if (playerRow, playerCol) == (len(app.maze) - 2, len(app.maze[0]) - 2):
+            app.gameOver = True
 
-    if (event.key == 'd'):
-        app.pa += 0.1
+    if event.x > app.preMouseX:
+        app.pa += (0.01 + 0.02 * (event.x - app.preMouseX))
         if app.pa > 2 * math.pi:
             app.pa -= 2 * math.pi
         app.pdx = math.cos(app.pa) * 5
         app.pdy = math.sin(app.pa) * 5
+        playerRow = int(app.py // app.mazeYO)
+        playerCol = int(app.px // app.mazeXO)
+        if (playerRow, playerCol) == (len(app.maze) - 2, len(app.maze[0]) - 2):
+            app.gameOver = True
 
-    if (event.key == 'w'):
-        app.px += app.pdx
-        app.py += app.pdy
-        if not isLegal(app):
-            app.px -= app.pdx
-            app.py -= app.pdy
-
-    if (event.key == 's'):
-        app.px -= app.pdx
-        app.py -= app.pdy
-        if not isLegal(app):
-            app.px += app.pdx
-            app.py += app.pdy
+    app.preMouseX = event.x
 
 def isLegal(app):
     playerRow = int(app.py // app.mazeYO)
@@ -120,8 +486,13 @@ def drawMaze(app, canvas):
                 x1 = x0 + app.cellSize
                 y0 = i * app.cellSize
                 y1 = y0 + app.cellSize
-
-                if app.maze[i][j] != 0:
+                if (i, j) == (app.startHeight, app.startWidth):
+                    canvas.create_rectangle(x0, y0, x1, y1, fill = 'green')
+                elif app.maze[i][j] == 3:
+                    canvas.create_rectangle(x0 + app.cellSize/3, y0 + 
+                    app.cellSize/3, x1 - app.cellSize/3, y1 - app.cellSize/3, 
+                    fill = 'yellow')
+                elif app.maze[i][j] != 0:
                     canvas.create_rectangle(x0, y0, x1, y1, fill = 'black')
                 else:
                     canvas.create_rectangle(x0, y0, x1, y1, fill = 'white')
@@ -249,7 +620,7 @@ def drawRays(app, canvas):
     #check bounds
     if ra < 0:
             ra += 2*math.pi
-    if ra > 2*math.pi:
+    if ra > 2 * math.pi:
             ra -= 2*math.pi
 
     for ray in range(90):
@@ -268,17 +639,29 @@ def drawRays(app, canvas):
             if ra > math.pi/2 and ra < 3*math.pi/2:
                 if (rayVRow < app.dimensions and rayVCol < app.dimensions and 
                     rayVRow >= 0 and rayVCol >= 0):
-                    if app.maze[rayVRow][rayVCol-1] == 2:
-                        color = 'red'
                     if app.maze[rayVRow][rayVCol-1] == 1:
                         color = 'green'
+                    if app.maze[rayVRow][rayVCol-1] == 2:
+                        color = 'red'
+                    if app.maze[rayVRow][rayVCol-1] == 3:
+                        color = 'yellow'
+                    if app.maze[rayVRow][rayVCol-1] == 4:
+                        color = 'pink'
+                    if app.maze[rayVRow][rayVCol-1] == 5:
+                        color = 'purple'
             else:
                 if (rayVRow < app.dimensions and rayVCol < app.dimensions and 
                 rayVRow >= 0 and rayVCol >= 0):
-                    if app.maze[rayVRow][rayVCol] == 2:
-                        color = 'red'
                     if app.maze[rayVRow][rayVCol] == 1:
                         color = 'green'
+                    if app.maze[rayVRow][rayVCol] == 2:
+                        color = 'red'
+                    if app.maze[rayVRow][rayVCol] == 3:
+                        color = 'yellow'
+                    if app.maze[rayVRow][rayVCol] == 4:
+                        color = 'pink'
+                    if app.maze[rayVRow][rayVCol] == 5:
+                        color = 'purple'
 
 
         elif distV == 0:
@@ -289,17 +672,29 @@ def drawRays(app, canvas):
             if ra < math.pi:
                 if (rayHRow < app.dimensions and rayHCol < app.dimensions and 
                 rayHRow >= 0 and rayHCol >= 0):
-                    if app.maze[rayHRow][rayHCol] == 2:
-                        color = 'red3'
                     if app.maze[rayHRow][rayHCol] == 1:
                         color = 'green3'
+                    if app.maze[rayHRow][rayHCol] == 2:
+                        color = 'red3'
+                    if app.maze[rayHRow][rayHCol] == 3:
+                        color = 'yellow3'
+                    if app.maze[rayHRow][rayHCol] == 4:
+                        color = 'pink3'
+                    if app.maze[rayHRow][rayHCol] == 5:
+                        color = 'purple3'
             else:
                 if (rayHRow < app.dimensions and rayHCol < app.dimensions and 
                 rayHRow >= 0 and rayHCol >= 0):
-                    if app.maze[rayHRow-1][rayHCol] == 2:
-                        color = 'red3'
                     if app.maze[rayHRow-1][rayHCol] == 1:
                         color = 'green3'
+                    if app.maze[rayHRow-1][rayHCol] == 2:
+                        color = 'red3'
+                    if app.maze[rayHRow-1][rayHCol] == 3:
+                        color = 'yellow3'
+                    if app.maze[rayHRow-1][rayHCol] == 4:
+                        color = 'pink3'
+                    if app.maze[rayHRow-1][rayHCol] == 5:
+                        color = 'purple3'
 
         elif distH > distV:
             canvas.create_line(app.px, app.py, xV, yV, fill = 'green', 
@@ -309,17 +704,29 @@ def drawRays(app, canvas):
             if ra > math.pi/2 and ra < 3*math.pi/2:
                 if (rayVRow < app.dimensions and rayVCol < app.dimensions and 
                 rayVRow >= 0 and rayVCol >= 0):
-                    if app.maze[rayVRow][rayVCol-1] == 2:
-                        color = 'red'
                     if app.maze[rayVRow][rayVCol-1] == 1:
                         color = 'green'
+                    if app.maze[rayVRow][rayVCol-1] == 2:
+                        color = 'red'
+                    if app.maze[rayVRow][rayVCol-1] == 3:
+                        color = 'yellow'
+                    if app.maze[rayVRow][rayVCol-1] == 4:
+                        color = 'pink'
+                    if app.maze[rayVRow][rayVCol-1] == 5:
+                        color = 'purple'
             else:
                 if (rayVRow < app.dimensions and rayVCol < app.dimensions and 
                 rayVRow >= 0 and rayVCol >= 0):
-                    if app.maze[rayVRow][rayVCol] == 2:
-                        color = 'red'
                     if app.maze[rayVRow][rayVCol] == 1:
                         color = 'green'
+                    if app.maze[rayVRow][rayVCol] == 2:
+                        color = 'red'
+                    if app.maze[rayVRow][rayVCol] == 3:
+                        color = 'yellow'
+                    if app.maze[rayVRow][rayVCol] == 4:
+                        color = 'pink'
+                    if app.maze[rayVRow][rayVCol] == 5:
+                        color = 'purple'
 
         else:
             canvas.create_line(app.px, app.py, xH, yH, fill = 'green', 
@@ -329,17 +736,29 @@ def drawRays(app, canvas):
             if ra < math.pi:
                 if (rayHRow < app.dimensions and rayHCol < app.dimensions and 
                 rayHRow >= 0 and rayHCol >= 0):
-                    if app.maze[rayHRow][rayHCol] == 2:
-                        color = 'red3'
                     if app.maze[rayHRow][rayHCol] == 1:
                         color = 'green3'
+                    if app.maze[rayHRow][rayHCol] == 2:
+                        color = 'red3'
+                    if app.maze[rayHRow][rayHCol] == 3:
+                        color = 'yellow3'
+                    if app.maze[rayHRow][rayHCol] == 4:
+                        color = 'pink3'
+                    if app.maze[rayHRow][rayHCol] == 5:
+                        color = 'purple3'
             else:
                 if (rayHRow < app.dimensions and rayHCol < app.dimensions and 
                 rayHRow >= 0 and rayHCol >= 0):
-                    if app.maze[rayHRow-1][rayHCol] == 2:
-                        color = 'red3'
                     if app.maze[rayHRow-1][rayHCol] == 1:
                         color = 'green3'
+                    if app.maze[rayHRow-1][rayHCol] == 2:
+                        color = 'red3'
+                    if app.maze[rayHRow-1][rayHCol] == 3:
+                        color = 'yellow3'
+                    if app.maze[rayHRow-1][rayHCol] == 4:
+                        color = 'pink3'
+                    if app.maze[rayHRow-1][rayHCol] == 5:
+                        color = 'purple3'
 
         #check bounds again after addition
         ra += math.pi/270
@@ -369,24 +788,68 @@ def drawRays(app, canvas):
         lineO = app.height/2 - height/2
 
         #draw walls
+    
         canvas.create_line(ray * 8 + app.width/2, lineO, ray * 8 + app.height, 
         height + lineO, fill = color, width = 8)
 
+def drawKey(app, canvas):
+    a = key(300,300,20, True)
+    if a.gameState == True:
+        sx = a.x - app.px
+        sy = a.y - app.py
+        sz = a.z 
+
+        CS =  math.cos(app.pa)
+        SN =  math.sin(app.pa)
+
+        x = sy * CS + sx * SN
+        y = sx * CS - sy * SN
+
+        # a = sx * CS - sy * SN
+        # b = sx * SN + sy * CS
+
+        sx = x + a.x
+        sy = y + a.y
+        
+        sx = (sx*108.0/sy) + app.width/2
+        sy = (sz*108.0/sx) + app.height/1.5
+        if abs(app.px - a.x) < 30 or abs(app.py - a.y) < 30:
+            a.gameState = False
+            app.doorUnlocked = True
+            
+        canvas.create_rectangle(app.px + sx-4, app.py+sy-4, app.px+sx+4, app.py+sy+4,
+        fill = 'yellow', width = 0)
+
+def drawCrosshair(app, canvas):
+    canvas.create_line(3 * app.width/4 - 15, app.height/2, 3 * app.width/4 + 15,
+     app.height/2, fill = 'black', width = 1)
+    canvas.create_line(3 * app.width/4, app.height/2 - 15, 3 * app.width/4,
+     app.height/2 + 15, fill = 'black', width = 1)
+
+def drawEndBanner(app, canvas):
+    canvas.create_text(app.width/2, app.height/2, 
+    text = 'You Win!!! (Press r to restart)', font = 'Arial 30', fill = 'Black')
+
 def redrawAll(app, canvas):
-    drawBackground(app,canvas)
-    drawMaze(app, canvas)
-    drawPlayer(app, canvas)
-    drawRays(app, canvas)
+    if app.gameOver:
+        drawEndBanner(app, canvas)
+    else:
+        drawBackground(app,canvas)
+        drawMaze(app, canvas)
+        drawPlayer(app, canvas)
+        drawRays(app, canvas)
+        drawCrosshair(app, canvas)
+        # drawKey(app, canvas)
+        
+        
+class key():
+    def __init__(self, x, y, z, gameState):
+        self.x = x
+        self.y = y
+        self.z = z
+        self.gameState = gameState
 
-runApp(width = 1600, height = 800)
-
-
-
-
-
-
-
-
+runApp(width = 1400, height = 700)
 
 
 
