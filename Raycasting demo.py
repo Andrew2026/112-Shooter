@@ -5,8 +5,8 @@ import math, random
 #https://weblog.jamisbuck.org/2011/1/27/maze-generation-growing-tree-algorithm
 #https://medium.com/swlh/fun-with-python-1-maze-generator-931639b4fb7e 
 #https://pythonprogramming.altervista.org/raycasting-with-pygame/
-#https://youtu.be/eBFOjriHMc8 
-#https://www.youtube.com/watch?v=gYRrGTC7GtA&t=498s
+#https://youtu.be/eBFOjriHMc8 - 3DSage
+#https://www.youtube.com/watch?v=gYRrGTC7GtA&t=498s - 3DSage
 
 class Maze():
     def __init__(self, height, width):
